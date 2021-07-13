@@ -420,6 +420,7 @@ class BotMarathon:
                 if menu:
                     return User.objects.get(tg_id=chat_id), markup, 'Извините, марафон пока что закрыт!'
                 else:
+                    markup.add(self.back_button).add(self.main_menu)
                     self.bot.edit_message_text(text='Марафон еще не начался!',
                                                chat_id=chat_id, message_id=message_id, reply_markup=markup)
                     return
@@ -427,8 +428,7 @@ class BotMarathon:
                 photo = Photo.objects.get_or_none(tg_id=chat_id)
                 if photo:
                     markup = get_buttons(buttons='photo_get', markup=markup, chat_id=chat_id)
-                    markup.add(self.back_button)
-                    markup.add(self.main_menu)
+                    markup.add(self.back_button).add(self.main_menu)
                     if menu:
                         return User.objects.get(tg_id=chat_id), markup, \
                                'Какую фотографию вы хотите увидеть?\n' \
