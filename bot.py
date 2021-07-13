@@ -640,7 +640,8 @@ class BotMarathon:
                 )
                 if not user[1]:
                     invitation_code = ''.join(random.choice(string.ascii_letters) for _ in range(8))
-                    user.invitation_code = invitation_code
+                    user[0].invitation_code = invitation_code
+                    user[0].save()
             elif state.scenario_name == 'photo':
                 pass
             elif 'measurement_' in state.scenario_name:
@@ -676,8 +677,8 @@ class BotMarathon:
                     UserState.objects.filter(user_id=state.user_id).update(step_name=step['next_step'],
                                                                            context=state.context)
                 else:
-                    UserState.objects.get(user_id=state.user_id).delete()
                     distribution_create(username, state)
+                    UserState.objects.get(user_id=state.user_id).delete()
             else:
                 text_to_send = step['failure_text'].format(**state.context)
                 self.bot.send_message(chat_id=chat_id, text=text_to_send)
