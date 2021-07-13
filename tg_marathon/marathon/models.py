@@ -159,6 +159,26 @@ class Marathon(Model):
         return f'{self.name}'
 
 
+class Product(Model):
+    class Meta:
+        verbose_name_plural = 'Товары'
+
+    objects = MyManager()
+    name = CharField(max_length=20, default='', verbose_name='Название товара:', db_index=True)
+    description = TextField(max_length=5000, default='', verbose_name='Описание товара:')
+    image = ImageField(upload_to='image_product/', null=True, blank=True, verbose_name="Фотография товара:")
+    price = IntegerField(default=0, null=False, verbose_name='Стоимость товара:')
+    unique_code = CharField(max_length=20, default='', unique=True, blank=True, verbose_name='Уникальный код товара:')
+
+    def save(self, *args, **kwargs):
+        if not self.unique_code:
+            self.unique_code = ''.join(random.choice(string.ascii_letters) for _ in range(20))
+        super(Product, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name}"
+
+
 class User(Model):
     class Meta:
         verbose_name_plural = 'Пользователи бота'
@@ -178,6 +198,8 @@ class User(Model):
                           verbose_name='Марафон, в котором участвует пользователь:')
     completed_tasks = ManyToManyField(Tasks, blank=True,
                                       verbose_name='Выполненные задания:')
+    purchased_goods = ManyToManyField(Product, blank=True,
+                                      verbose_name='Выполненные задания:')
     measurement = ForeignKey(Measurement, on_delete=CASCADE, null=True, blank=True,
                              verbose_name='Замеры пользователя:')
     photos = ForeignKey(Photo, on_delete=CASCADE, null=True, blank=True, verbose_name='Фотографии пользователя:')
@@ -185,26 +207,6 @@ class User(Model):
 
     def __str__(self):
         return f'{self.name} {self.surname} - {self.tg_id}'
-
-
-class Product(Model):
-    class Meta:
-        verbose_name_plural = 'Товары'
-
-    objects = MyManager()
-    name = CharField(max_length=20, default='', verbose_name='Название товара:', db_index=True)
-    description = TextField(max_length=5000, default='', verbose_name='Описание товара:')
-    image = ImageField(upload_to='image_product/', null=True, blank=True, verbose_name="Фотография товара:")
-    price = IntegerField(default=0, null=False, verbose_name='Стоимость товара:')
-    unique_code = CharField(max_length=20, default='', unique=True, blank=True, verbose_name='Уникальный код товара:')
-
-    def save(self, *args, **kwargs):
-        if not self.unique_code:
-            self.unique_code = ''.join(random.choice(string.ascii_letters) for _ in range(20))
-        super(Product, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.name}"
 
 
 class Config(Model):

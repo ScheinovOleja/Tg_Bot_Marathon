@@ -238,7 +238,6 @@ class BotMarathon:
             if product:
                 if user.scopes >= product.price:
                     if call.message.content_type == 'photo':
-
                         self.bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
                         self.bot.send_message(
                             text=f'Сообщите следующий код администратору - {product.unique_code}',
@@ -251,6 +250,7 @@ class BotMarathon:
                             chat_id=call.message.chat.id, message_id=call.message.id,
                             reply_markup=InlineKeyboardMarkup().add(self.back_button).add(self.main_menu)
                         )
+                    user.purchased_goods.add(product)
                     user.scopes -= product.price
                     user.save()
                 else:

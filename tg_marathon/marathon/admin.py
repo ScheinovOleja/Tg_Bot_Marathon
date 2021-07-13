@@ -22,12 +22,13 @@ class MarathonAdmin(admin.ModelAdmin):
 class UserAdmin(admin.ModelAdmin):
     list_display = ['tg_nickname', 'name', 'surname', 'scopes']
     fields = ['tg_nickname', 'name', 'surname', 'scopes', 'birthday', 'sex', 'invitation_code', 'get_photo',
-              'get_measurement', 'complete_task']
+              'get_measurement', 'complete_task', 'purchased_products']
     list_filter = ['sex']
     list_per_page = 10
     actions = ['import_csv']
     search_fields = ['name', 'surname']
-    readonly_fields = ['invitation_code', 'tg_id', 'get_photo', 'get_measurement', 'complete_task']
+    readonly_fields = ['invitation_code', 'tg_id', 'get_photo', 'get_measurement', 'complete_task',
+                       'purchased_products']
 
     def import_csv(self, request, queryset):
         try:
@@ -62,6 +63,20 @@ class UserAdmin(admin.ModelAdmin):
         for task in Tasks.objects.all():
             if any([task.id in complete for complete in complete_task]):
                 text_url += f'<li><b><a href="/admin/marathon/tasks/{task.id}/change/" target="_blank">{task.name}' \
+                            f'</a></b></li>\n'
+        url = f"""
+                <ul>
+                    {text_url}
+                </ul>
+                """
+        return mark_safe(url)
+
+    def purchased_products(self, request):
+        complete_task = User.objects.filter(tg_id=request.tg_id).values_list('purchased_goods')
+        text_url = ''
+        for product in Product.objects.all():
+            if any([product.id in complete for complete in complete_task]):
+                text_url += f'<li><b><a href="/admin/marathon/product/{product.id}/change/" target="_blank">{product.name}' \
                             f'</a></b></li>\n'
         url = f"""
                 <ul>
