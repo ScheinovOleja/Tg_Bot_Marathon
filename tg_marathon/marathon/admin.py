@@ -7,6 +7,7 @@ from pathlib import Path
 from django.contrib import admin
 # Register your models here.
 from django.shortcuts import redirect
+from django.urls import reverse, path
 from django.utils.safestring import mark_safe
 
 from .models import User, Measurement, Marathon, Tasks, CategoryTasks, Product, Photo, Config, Buttons
@@ -195,4 +196,24 @@ class TaskAdmin(admin.ModelAdmin):
 
 @admin.register(Config)
 class ConfigAdmin(admin.ModelAdmin):
-    list_display = ['name', 'login']
+    list_display = ['name', 'login', 'start_bot']
+
+    def start_bot(self, request):
+        return mark_safe(
+            f'<a class="button" href="{reverse("admin:start")}">Запустить</a>')
+
+    # Добавляем к существующим ссылкам в админке, ссылки на кнопки для их обработки
+    def get_urls(self):
+        urls = super().get_urls()
+        shard_urls = [path('#', self.admin_site.admin_view(self.start), name="start")]
+        # Список отображаемых столбцов
+        return shard_urls + urls
+
+    # Обработка событий кнопок
+    def start(self, request):
+        path = Path(__file__).resolve().parent.parent.parent
+        text = f'source {path}/venv/bin/activate & python {path}/bot.py'
+        test = os.system(text)
+        return redirect('/admin/marathon/config/')
+
+    start_bot.short_description = 'Запуск'

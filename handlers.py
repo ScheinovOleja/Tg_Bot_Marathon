@@ -12,6 +12,64 @@ django.setup()
 
 from marathon.models import User, Photo, Measurement, Marathon, UserState, CategoryTasks, Tasks, Product, Buttons
 
+
+def get_buttons(buttons='start', markup=None, chat_id=None):
+    buttons = Buttons.objects.all().first()
+    if buttons == 'start':
+        texts = ['Tasks_start', 'Info_start', 'Calculate_kcal_start', 'Invite_friend_start', 'Enter_code_start',
+                 'Code_task_start', 'Buy_product_start']
+        for text in texts:
+            caption = getattr(buttons, text.lower())
+            markup.add(InlineKeyboardButton(text=caption, callback_data=text))
+    elif buttons == 'information':
+        texts = ['Measurement_marathon_start',
+                 'Photos_marathon_start',
+                 'Stats_all']
+        for text in texts:
+            caption = getattr(buttons, text.lower())
+            markup.add(InlineKeyboardButton(text=caption, callback_data=text))
+    elif 'photo' in buttons:
+        callbacks = ['photo_front_before', 'photo_sideways_before', 'photo_back_before',
+                     'photo_front_after',
+                     'photo_sideways_after', 'photo_back_after']
+        if '_get' in buttons:
+            photo = Photo.objects.get_or_none(tg_id=chat_id)
+            for callback in callbacks:
+                image = getattr(photo, callback)
+                if not image:
+                    continue
+                else:
+                    btn_text = getattr(buttons, callback)
+                    markup.add(InlineKeyboardButton(text=btn_text,
+                                                    callback_data=f'{callback}_get'))
+        if '_add' in buttons:
+            marathon = Marathon.objects.get_marathon()
+            if marathon.send_measurements_before:
+                before_buttons = [btn for btn in callbacks if '_before' in btn]
+                for btn in before_buttons:
+                    btn_text = getattr(buttons, btn)
+                    markup.add(InlineKeyboardButton(text=btn_text, callback_data=f'{btn}_add'))
+            if marathon.send_measurements_after:
+                before_buttons = [btn for btn in callbacks if '_after' in btn]
+                for btn in before_buttons:
+                    btn_text = getattr(buttons, btn)
+                    markup.add(InlineKeyboardButton(text=btn_text, callback_data=f'{btn}_add'))
+    elif 'add' in buttons:
+        marathon = Marathon.objects.get_marathon()
+        callbacks = ['Add_before', 'Add_after']
+        for callback in callbacks:
+            btn_text = getattr(buttons, callback)
+            markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
+        if marathon.send_measurements_before:
+            markup.add(InlineKeyboardButton(text='Ввести замеры ДО', callback_data='Add_before'))
+        if marathon.send_measurements_after:
+            markup.add(InlineKeyboardButton(text='Ввести замеры ПОСЛЕ', callback_data='Add_after'))
+    back_button = InlineKeyboardButton(text=f'{getattr(buttons, "back")}',
+                                            callback_data='back')
+    main_menu = InlineKeyboardButton(text=f'{getattr(buttons, "main_menu")}',
+                                          callback_data='main_menu')
+    return markup
+
 start_buttons = [
     InlineKeyboardButton(text='Задания', callback_data='Tasks_start'),
     InlineKeyboardButton(text='Моя информация', callback_data='Info_start'),
@@ -40,8 +98,7 @@ def sex_handler(text: str, context, markup):
 
 
 def birthday_handler(text: str, context, markup):
-    for button in start_buttons:
-        markup.add(button)
+    markup = get_buttons('start', markup)
     if re.match(r'\d\d[.]\d\d[.]\d\d\d\d', text):
         date = int(text.split('.')[0])
         month = int(text.split('.')[1])
@@ -89,8 +146,7 @@ def femur_handler_before(text: str, context, markup):
 
 
 def weight_handler_before(text: str, context, markup):
-    for button in start_buttons:
-        markup.add(button)
+    markup = get_buttons('start', markup)
     try:
         if float(text):
             context['weight_before'] = float(text)
@@ -131,8 +187,7 @@ def femur_handler_after(text: str, context, markup):
 
 
 def weight_handler_after(text: str, context, markup):
-    for button in start_buttons:
-        markup.add(button)
+    markup = get_buttons('start', markup)
     try:
         if float(text):
             context['weight_after'] = float(text)
