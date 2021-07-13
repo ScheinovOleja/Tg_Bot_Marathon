@@ -10,7 +10,7 @@ from django.shortcuts import redirect
 from django.urls import reverse, path
 from django.utils.safestring import mark_safe
 
-from .models import User, Measurement, Marathon, Tasks, CategoryTasks, Product, Photo, Config, Buttons
+from .models import User, Measurement, Marathon, Tasks, CategoryTasks, Product, Photo, Config, Buttons, UserState
 
 
 @admin.register(CategoryTasks, Buttons)
@@ -217,3 +217,8 @@ class ConfigAdmin(admin.ModelAdmin):
         return redirect('/admin/marathon/config/')
 
     start_bot.short_description = 'Запуск'
+
+
+@admin.register(UserState)
+class UserStateAdmin(admin.ModelAdmin):
+    pass
