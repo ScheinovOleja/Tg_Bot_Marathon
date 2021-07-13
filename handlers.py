@@ -14,19 +14,19 @@ from marathon.models import User, Photo, Measurement, Marathon, UserState, Categ
 
 
 def get_buttons(buttons='start', markup=None, chat_id=None):
-    buttons = Buttons.objects.all().first()
+    btns = Buttons.objects.all().first()
     if buttons == 'start':
         texts = ['Tasks_start', 'Info_start', 'Calculate_kcal_start', 'Invite_friend_start', 'Enter_code_start',
                  'Code_task_start', 'Buy_product_start']
         for text in texts:
-            caption = getattr(buttons, text.lower())
+            caption = getattr(btns, text.lower())
             markup.add(InlineKeyboardButton(text=caption, callback_data=text))
     elif buttons == 'information':
         texts = ['Measurement_marathon_start',
                  'Photos_marathon_start',
                  'Stats_all']
         for text in texts:
-            caption = getattr(buttons, text.lower())
+            caption = getattr(btns, text.lower())
             markup.add(InlineKeyboardButton(text=caption, callback_data=text))
     elif 'photo' in buttons:
         callbacks = ['photo_front_before', 'photo_sideways_before', 'photo_back_before',
@@ -39,7 +39,7 @@ def get_buttons(buttons='start', markup=None, chat_id=None):
                 if not image:
                     continue
                 else:
-                    btn_text = getattr(buttons, callback)
+                    btn_text = getattr(btns, callback)
                     markup.add(InlineKeyboardButton(text=btn_text,
                                                     callback_data=f'{callback}_get'))
         if '_add' in buttons:
@@ -47,38 +47,28 @@ def get_buttons(buttons='start', markup=None, chat_id=None):
             if marathon.send_measurements_before:
                 before_buttons = [btn for btn in callbacks if '_before' in btn]
                 for btn in before_buttons:
-                    btn_text = getattr(buttons, btn)
+                    btn_text = getattr(btns, btn)
                     markup.add(InlineKeyboardButton(text=btn_text, callback_data=f'{btn}_add'))
             if marathon.send_measurements_after:
                 before_buttons = [btn for btn in callbacks if '_after' in btn]
                 for btn in before_buttons:
-                    btn_text = getattr(buttons, btn)
+                    btn_text = getattr(btns, btn)
                     markup.add(InlineKeyboardButton(text=btn_text, callback_data=f'{btn}_add'))
     elif 'add' in buttons:
         marathon = Marathon.objects.get_marathon()
         callbacks = ['Add_before', 'Add_after']
         for callback in callbacks:
-            btn_text = getattr(buttons, callback)
+            btn_text = getattr(btns, callback)
             markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
         if marathon.send_measurements_before:
             markup.add(InlineKeyboardButton(text='Ввести замеры ДО', callback_data='Add_before'))
         if marathon.send_measurements_after:
             markup.add(InlineKeyboardButton(text='Ввести замеры ПОСЛЕ', callback_data='Add_after'))
-    back_button = InlineKeyboardButton(text=f'{getattr(buttons, "back")}',
+    back_button = InlineKeyboardButton(text=f'{getattr(btns, "back")}',
                                             callback_data='back')
-    main_menu = InlineKeyboardButton(text=f'{getattr(buttons, "main_menu")}',
+    main_menu = InlineKeyboardButton(text=f'{getattr(btns, "main_menu")}',
                                           callback_data='main_menu')
     return markup
-
-start_buttons = [
-    InlineKeyboardButton(text='Задания', callback_data='Tasks_start'),
-    InlineKeyboardButton(text='Моя информация', callback_data='Info_start'),
-    InlineKeyboardButton(text='Подсчитать количество ККАЛ', callback_data='Calculate_kcal_start'),
-    InlineKeyboardButton(text='Пригласить друга', callback_data='Invite_friend_start'),
-    InlineKeyboardButton(text='Ввести код приглашения', callback_data='Enter_code_start'),
-    InlineKeyboardButton(text='Ввести код задания', callback_data='Code_task_start'),
-    InlineKeyboardButton(text='Приобрести товар', callback_data='Buy_product_start')
-]
 
 
 def name_handler(text: str, context, markup):

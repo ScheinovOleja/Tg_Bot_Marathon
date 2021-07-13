@@ -640,7 +640,8 @@ class BotMarathon:
                 )
                 if not user[1]:
                     invitation_code = ''.join(random.choice(string.ascii_letters) for _ in range(8))
-                    user.invitation_code = invitation_code
+                    user[0].invitation_code = invitation_code
+                    user[0].save()
             elif state.scenario_name == 'photo':
                 pass
             elif 'measurement_' in state.scenario_name:
@@ -676,8 +677,8 @@ class BotMarathon:
                     UserState.objects.filter(user_id=state.user_id).update(step_name=step['next_step'],
                                                                            context=state.context)
                 else:
-                    UserState.objects.get(user_id=state.user_id).delete()
                     distribution_create(username, state)
+                    UserState.objects.get(user_id=state.user_id).delete()
             else:
                 text_to_send = step['failure_text'].format(**state.context)
                 self.bot.send_message(chat_id=chat_id, text=text_to_send)
@@ -944,12 +945,12 @@ class BotMarathon:
                 marathon = Marathon.objects.get_marathon()
                 callbacks = ['Add_before', 'Add_after']
                 for callback in callbacks:
-                    btn_text = getattr(self.buttons, callback)
-                    markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
-                if marathon.send_measurements_before:
-                    markup.add(InlineKeyboardButton(text='Ввести замеры ДО', callback_data='Add_before'))
-                if marathon.send_measurements_after:
-                    markup.add(InlineKeyboardButton(text='Ввести замеры ПОСЛЕ', callback_data='Add_after'))
+                    if marathon.send_measurements_before and callback == 'Add_before':
+                        btn_text = getattr(self.buttons, callback)
+                        markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
+                    if marathon.send_measurements_after and callback == 'Add_after':
+                        btn_text = getattr(self.buttons, callback)
+                        markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
             self.back_button = InlineKeyboardButton(text=f'{getattr(self.buttons, "back")}',
                                                     callback_data='back')
             self.main_menu = InlineKeyboardButton(text=f'{getattr(self.buttons, "main_menu")}',
