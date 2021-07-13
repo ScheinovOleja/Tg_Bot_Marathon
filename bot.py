@@ -43,6 +43,10 @@ class BotMarathon:
 
     def __init__(self):
         self.bot = tb.TeleBot(token=getattr(Config.objects.all().first(), 'token_bot'), num_threads=2)
+        self.back_button = InlineKeyboardButton(text=f'{getattr(Buttons.objects.all().first(), "back")}',
+                                                callback_data='back')
+        self.main_menu = InlineKeyboardButton(text=f'{getattr(Buttons.objects.all().first(), "main_menu")}',
+                                              callback_data='main_menu')
         self.def_bots()
         self.image = None
         self.back_button = None
@@ -323,12 +327,15 @@ class BotMarathon:
             categories = CategoryTasks.objects.all()
             markup = InlineKeyboardMarkup(row_width=1)
             edit_menu_user(call)
+            text = 'Выберите категорию:'
             for category in categories:
                 markup.add(InlineKeyboardButton(text=f'{category.category}', callback_data=f'Category_{category.id}'))
-            markup.add(self.back_button)
-            markup.add(self.main_menu)
+            else:
+                text = 'К сожалению, на данный момент еще нет ни одного задания!'
+            markup = get_buttons('', markup)
+            markup.add(self.back_button).add(self.main_menu)
             self.bot.edit_message_text(
-                text='Выберите категорию:', chat_id=chat_id, message_id=message_id,
+                text=text, chat_id=chat_id, message_id=message_id,
                 reply_markup=markup
             )
 
@@ -892,7 +899,7 @@ class BotMarathon:
             return markup
 
         @log_error
-        def get_buttons(buttons, markup=None, chat_id=None):
+        def get_buttons(buttons='start', markup=None, chat_id=None):
             self.buttons = Buttons.objects.all().first()
             if buttons == 'start':
                 texts = ['Tasks_start', 'Info_start', 'Calculate_kcal_start', 'Invite_friend_start', 'Enter_code_start',
