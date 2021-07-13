@@ -755,6 +755,8 @@ class BotMarathon:
         def photos_add(message):
             file_url = self.bot.get_file_url(file_id=message.photo[-1].file_id)
             self.image = requests.get(file_url).content
+            if not os.path.isdir(f"{os.getcwd()}/tg_marathon/media/user_photos"):
+                os.mkdir(f"{os.getcwd()}/tg_marathon/media/user_photos")
             if not os.path.isdir(f"{os.getcwd()}/tg_marathon/media/user_photos/{message.chat.id}"):
                 os.mkdir(f"{os.getcwd()}/tg_marathon/media/user_photos/{message.chat.id}")
             with open(f"{os.getcwd()}/tg_marathon/media/user_photos/{message.chat.id}/"
@@ -936,11 +938,11 @@ class BotMarathon:
                 if '_get' in buttons:
                     photo = Photo.objects.get_or_none(tg_id=chat_id)
                     for callback in callbacks:
-                        image = getattr(photo, callback)
+                        image = getattr(photo, callback.lower())
                         if not image:
                             continue
                         else:
-                            btn_text = getattr(self.buttons, callback)
+                            btn_text = getattr(self.buttons, callback.lower())
                             markup.add(InlineKeyboardButton(text=btn_text,
                                                             callback_data=f'{callback}_get'))
                 if '_add' in buttons:
@@ -948,22 +950,22 @@ class BotMarathon:
                     if marathon.send_measurements_before:
                         before_buttons = [btn for btn in callbacks if '_before' in btn]
                         for btn in before_buttons:
-                            btn_text = getattr(self.buttons, btn)
+                            btn_text = getattr(self.buttons, btn.lower())
                             markup.add(InlineKeyboardButton(text=btn_text, callback_data=f'{btn}_add'))
                     if marathon.send_measurements_after:
                         before_buttons = [btn for btn in callbacks if '_after' in btn]
                         for btn in before_buttons:
-                            btn_text = getattr(self.buttons, btn)
+                            btn_text = getattr(self.buttons, btn.lower())
                             markup.add(InlineKeyboardButton(text=btn_text, callback_data=f'{btn}_add'))
             elif 'add' in buttons:
                 marathon = Marathon.objects.get_marathon()
                 callbacks = ['Add_before', 'Add_after']
                 for callback in callbacks:
                     if marathon.send_measurements_before and callback == 'Add_before':
-                        btn_text = getattr(self.buttons, callback)
+                        btn_text = getattr(self.buttons, callback.lower())
                         markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
                     if marathon.send_measurements_after and callback == 'Add_after':
-                        btn_text = getattr(self.buttons, callback)
+                        btn_text = getattr(self.buttons, callback.lower())
                         markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
             self.back_button = InlineKeyboardButton(text=f'{getattr(self.buttons, "back")}',
                                                     callback_data='back')
