@@ -1,2 +1,178 @@
-TOKEN = 'your_tg_token'
+INTENTS = [
+    {
+        "name": "Регистрация",
+        "tokens": ["start", "register"],
+        "scenario": "register",
+        "answer": ""
+    },
+    {
+        "name": "Замеры ДО",
+        "tokens": ["measurement_before"],
+        "scenario": "measurement_before",
+        "answer": ""
+    },
+    {
+        "name": "Замеры ПОСЛЕ",
+        "tokens": ["measurement_after"],
+        "scenario": "measurement_after",
+        "answer": ""
+    },
+    {
+        "name": "Рассчитать ККАЛ",
+        "tokens": ["calculate_kcal"],
+        "scenario": "calculate_kcal",
+        "answer": ""
+    }
+]
 
+SCENARIOS = {
+    "register": {
+        "first_step": "step1",
+        "steps": {
+            "step1":
+                {
+                    "text": "Доброго времени суток!\nКак вас зовут?(Фамилия Имя)",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "name_handler",
+                    "next_step": "step2"
+                },
+            "step2":
+                {
+                    "text": "Вы М или Ж?",
+                    "failure_text": "",
+                    "handler": "sex_handler",
+                    "next_step": "step3"
+                },
+            "step3":
+                {
+                    "text": "Введите дату своего рождения в формате ДД.ММ.ГГГГ",
+                    "failure_text": "Вы ввели некорректную дату. Повторите попытку!",
+                    "handler": "birthday_handler",
+                    "next_step": "step4",
+                },
+            "step4":
+                {
+                    "text": "Привет {name}!\nВыберите пункт меню:",
+                    "failure_text": "",
+                    "handler": "",
+                    "next_step": "",
+                }
+        }
+    },
+    "measurement_before": {
+        "first_step": "step1",
+        "steps": {
+            "step1":
+                {
+                    "text": "Введите обхват груди в см:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "breast_handler_before",
+                    "next_step": "step2"
+
+                },
+            "step2":
+                {
+                    "text": "Введите обхват талии в см:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "waist_handler_before",
+                    "next_step": "step3"
+                },
+            "step3":
+                {
+                    "text": "Введите обхват бедер в см:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "femur_handler_before",
+                    "next_step": "step4",
+                },
+            "step4":
+                {
+                    "text": "Введите ваш вес в кг:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "weight_handler_before",
+                    "next_step": "step5",
+                },
+            "step5":
+                {
+                    "text": "Ваши данные успешно введены! Спасибо за предоставленную информацию!",
+                    "failure_text": "",
+                    "handler": "",
+                    "next_step": "",
+                }
+        }
+    },
+    "measurement_after": {
+        "first_step": "step1",
+        "steps": {
+            "step1":
+                {
+                    "text": "Введите обхват груди в см:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "breast_handler_after",
+                    "next_step": "step2"
+
+                },
+            "step2":
+                {
+                    "text": "Введите обхват талии в см:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "waist_handler_after",
+                    "next_step": "step3"
+                },
+            "step3":
+                {
+                    "text": "Введите обхват бедер в см:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "femur_handler_after",
+                    "next_step": "step4",
+                },
+            "step4":
+                {
+                    "text": "Введите ваш вес в кг:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "weight_handler_after",
+                    "next_step": "step5",
+                },
+            "step5":
+                {
+                    "text": "Ваши данные успешно введены! Спасибо за предоставленную информацию!",
+                    "failure_text": "",
+                    "handler": "",
+                    "next_step": "",
+                }
+        }
+    },
+    "calculate_kcal": {
+        "first_step": "step1",
+        "steps": {
+            "step1":
+                {
+                    "text": "Введите ваш вес на данный момент(в кг):",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "calculate_weight_handler",
+                    "next_step": "step2"
+
+                },
+            "step2":
+                {
+                    "text": "Введите ваш рост в данный момент(в см):",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "calculate_height_handler",
+                    "next_step": "step3"
+                },
+            "step3":
+                {
+                    "text": "Сколько раз в неделю вы занимаетесь спортом?:",
+                    "failure_text": "Что-то пошло не так. Повторите попытку!",
+                    "handler": "",
+                    "next_step": "step4",
+                },
+            "step4":
+                {
+                    "text": "",
+                    "failure_text": "",
+                    "handler": "",
+                    "next_step": "",
+                }
+        }
+    }
+}
