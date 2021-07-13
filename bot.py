@@ -590,10 +590,23 @@ class BotMarathon:
             :param local_markup: разметка сообщения
             :return: возврат объекта сообщения
             """
-            self.bot.delete_message(message_id=message_id, chat_id=chat_id)
-            return self.bot.send_message(chat_id=chat_id,
-                                         text=step['text'].format(**context),
-                                         reply_markup=local_markup, parse_mode="HTML")
+            try:
+                if message_id != context['message_id']:
+                    self.bot.delete_message(message_id=message_id, chat_id=chat_id)
+                if context['message_id']:
+                    if step['next_step'] is None:
+                        return self.bot.send_message(chat_id=chat_id,
+                                                     text=step['text'].format(**context),
+                                                     reply_markup=local_markup, parse_mode="HTML")
+                    return self.bot.edit_message_text(chat_id=chat_id,
+                                                      message_id=context['message_id'],
+                                                      text=step['text'].format(**context),
+                                                      reply_markup=local_markup, parse_mode="HTML")
+            except Exception as exc:
+                self.bot.delete_message(message_id=message_id, chat_id=chat_id)
+                return self.bot.send_message(chat_id=chat_id,
+                                             text=step['text'].format(**context),
+                                             reply_markup=local_markup, parse_mode="HTML")
 
         @log_error
         def get_object_scenario(message):
@@ -619,9 +632,9 @@ class BotMarathon:
             scenario = SCENARIOS[scenario_name]
             first_step = scenario['first_step']
             step = scenario['steps'][first_step]
-            send_step(step, chat_id, message_id=message.id, context={})
+            msg = send_step(step, chat_id, message_id=message.id, context={})
             UserState.objects.create(user_id=chat_id, scenario_name=scenario_name, step_name=first_step,
-                                     context={})
+                                     context={"message_id": msg.id})
 
         @log_error
         def distribution_create(username, state):
@@ -677,6 +690,7 @@ class BotMarathon:
                     UserState.objects.filter(user_id=state.user_id).update(step_name=step['next_step'],
                                                                            context=state.context)
                 else:
+                    self.bot.delete_message(chat_id=chat_id, message_id=state.context['message_id'])
                     distribution_create(username, state)
                     UserState.objects.get(user_id=state.user_id).delete()
             else:
