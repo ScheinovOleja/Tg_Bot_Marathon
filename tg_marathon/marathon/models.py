@@ -96,13 +96,21 @@ class Tasks(Model):
     count_scopes = IntegerField(default=0, null=False,
                                 verbose_name='Количество очков, получаемое при выполнении задания:')
     url = URLField(max_length=500, default='', null=True, blank=True, verbose_name='Ссылка на материалы для задания:')
-    image = ImageField(upload_to='image_users/', blank=True, null=True, verbose_name='Картинка задания:')
+    image = ImageField(upload_to='image_tasks/', blank=True, null=True, verbose_name='Картинка задания:')
     unique_key = CharField(max_length=12, default='', unique=True, blank=True, verbose_name='Уникальный код задания:')
 
     def save(self, *args, **kwargs):
         if not self.unique_key:
             self.unique_key = ''.join(random.choice(string.ascii_letters) for _ in range(12))
         super(Tasks, self).save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        for user in User.objects.filter(completed_tasks=self):
+            user.completed_tasks.remove(self)
+        file_path = f"{Path(__file__).resolve().parent.parent}/media/{self.image.name}"
+        command = f'rm -r {file_path}'
+        os.system(command)
+        return super(Tasks, self).delete()
 
     def __str__(self):
         return f'{self.name}'
@@ -174,6 +182,11 @@ class Product(Model):
         if not self.unique_code:
             self.unique_code = ''.join(random.choice(string.ascii_letters) for _ in range(20))
         super(Product, self).save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        file_path = f"{Path(__file__).resolve().parent.parent}/media/{self.image.name}"
+        os.system(f'rm -r {file_path}')
+        super(Product, self).delete()
 
     def __str__(self):
         return f"{self.name}"

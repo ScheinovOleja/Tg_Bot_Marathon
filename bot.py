@@ -378,14 +378,14 @@ class BotMarathon:
             if not marathon.close:
                 froze = Measurement.objects.get_or_none(tg_id=chat_id)
                 if froze:
-                    text = f'<pre>ДО:                ----->                ПОСЛЕ:\n' \
-                           f'Грудь: {froze.breast_before if froze.breast_before else ""}       ----->       ' \
+                    text = f'<pre>ДО:     ----->     ПОСЛЕ:\n' \
+                           f'Грудь: {froze.breast_before if froze.breast_before else ""}----->' \
                            f'Грудь: {froze.breast_after if froze.breast_after else ""},\n' \
-                           f'Талия: {froze.waist_before if froze.waist_before else ""}        ----->        ' \
+                           f'Талия: {froze.waist_before if froze.waist_before else ""}----->' \
                            f'Талия: {froze.waist_after if froze.waist_after else ""},\n' \
-                           f'Бедра: {froze.femur_before if froze.femur_before else ""}        ----->        ' \
+                           f'Бедра: {froze.femur_before if froze.femur_before else ""}----->' \
                            f'Бедра: {froze.femur_after if froze.femur_after else ""},\n' \
-                           f'Вес: {froze.weight_before if froze.weight_before else ""}       ----->       ' \
+                           f'Вес: {froze.weight_before if froze.weight_before else ""}----->' \
                            f'Вес: {froze.weight_after if froze.weight_after else ""}</pre>'
                     markup = get_buttons('add', markup)
                     if len(markup.keyboard) == 0:
