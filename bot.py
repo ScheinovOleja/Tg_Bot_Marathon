@@ -49,8 +49,6 @@ class BotMarathon:
                                               callback_data='main_menu')
         self.def_bots()
         self.image = None
-        self.back_button = None
-        self.main_menu = None
 
     @log_error
     def run(self):
@@ -69,16 +67,24 @@ class BotMarathon:
         """
 
         @log_error
-        @self.bot.message_handler(commands=['register'])
+        @self.bot.message_handler(commands=['register'], func=lambda message: not message.from_user.is_bot)
         def register(message):
+            try:
+                UserState.objects.get(user_id=message.chat.id).delete()
+            except Exception as exc:
+                pass
             register_user(message, 'register')
 
         @log_error
-        @self.bot.message_handler(commands=['clear'])
+        @self.bot.message_handler(commands=['clear'], func=lambda message: not message.from_user.is_bot)
         def clear(message):
             """
             Очистка истории сообщений
             """
+            try:
+                UserState.objects.get(user_id=message.chat.id).delete()
+            except Exception as exc:
+                pass
             count_time = int(message.text.split()[1])
             message_id = int(message.message_id)
             deadline = time.monotonic() + count_time
@@ -89,19 +95,19 @@ class BotMarathon:
                 except:
                     continue
 
-        @self.bot.message_handler(commands=['start'])
+        @self.bot.message_handler(commands=['start'], func=lambda message: not message.from_user.is_bot)
         @log_error
         def start(message):
+            try:
+                UserState.objects.get(user_id=message.chat.id).delete()
+            except Exception as exc:
+                pass
             chat_id = message.chat.id
             user = User.objects.get_or_none(tg_id=message.chat.id)
             if user:
                 markup = InlineKeyboardMarkup(row_width=2)
                 markup = get_buttons('start', markup)
-                self.bot.send_message(
-                    text=f"Привет {user.name}!\nВыберите пункт меню:",
-                    chat_id=chat_id,
-                    reply_markup=markup
-                )
+                get_msg_from_comparison(chat_id, message.id, markup, f"Привет, {user.name}!\nВыберите пункт меню:")
                 return
             else:
                 register_user(message, 'start')
@@ -136,15 +142,14 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "back" == call.data)
         def back(call):
+            try:
+                UserState.objects.get(user_id=call.message.chat.id).delete()
+            except Exception as exc:
+                pass
             markup = InlineKeyboardMarkup(row_width=2)
             markup, text = choice_menu(markup, call)
             if call.message.content_type == 'text':
-                self.bot.edit_message_text(
-                    text=text,
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.id,
-                    reply_markup=markup
-                )
+                get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
             elif call.message.content_type == 'photo':
                 self.bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
                 self.bot.send_message(
@@ -157,16 +162,16 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'main_menu' == call.data)
         def main_menu(call):
+            try:
+                UserState.objects.get(user_id=call.message.chat.id).delete()
+            except Exception as exc:
+                pass
             markup = InlineKeyboardMarkup(row_width=2)
             markup = get_buttons('start', markup)
             user = User.objects.get(tg_id=call.message.chat.id)
             if call.message.content_type == 'text':
-                self.bot.edit_message_text(
-                    text=f'Привет, {user.name}!\nВыбери пункт меню:',
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.id,
-                    reply_markup=markup
-                )
+                get_msg_from_comparison(call.message.chat.id, call.message.id, markup, f'Привет, {user.name}!\n'
+                                                                                       f'Выбери пункт меню:')
             elif call.message.content_type == 'photo':
                 self.bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
                 self.bot.send_message(
@@ -207,8 +212,7 @@ class BotMarathon:
             edit_menu_user(call)
             markup = InlineKeyboardMarkup(row_width=2)
             markup = get_all_products(markup)
-            self.bot.edit_message_text(text='Выберите товар:', chat_id=chat_id, message_id=message_id,
-                                       reply_markup=markup)
+            get_msg_from_comparison(chat_id, message_id, markup, 'Выберите товар:')
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "Product_" in call.data)
@@ -296,8 +300,7 @@ class BotMarathon:
             UserState.objects.get(user_id=state.user_id).delete()
             text = f'Вам требуется - {round(kcal, 2)} ККАЛ.'
             markup = InlineKeyboardMarkup(row_width=2).add(self.main_menu)
-            self.bot.edit_message_text(text=text, chat_id=call.message.chat.id, message_id=call.message.id,
-                                       reply_markup=markup)
+            get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
 
         @log_error
         def info_user(call, message_id, chat_id):
@@ -305,8 +308,7 @@ class BotMarathon:
             markup = InlineKeyboardMarkup()
             edit_menu_user(call)
             user, markup, text = to_main_menu_from_info(user, markup)
-            self.bot.edit_message_text(text=text, chat_id=chat_id, message_id=message_id,
-                                       reply_markup=markup)
+            get_msg_from_comparison(chat_id, message_id, markup, text)
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "Stats_all" in call.data)
@@ -319,8 +321,7 @@ class BotMarathon:
                 pass
             for user in users:
                 text += f'{user.name} {user.surname} - {user.scopes} баллов\n'
-            self.bot.edit_message_text(text=text, chat_id=call.message.chat.id, message_id=call.message.id,
-                                       reply_markup=markup)
+            get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
 
         @log_error
         def tasks(call, message_id, chat_id):
@@ -330,14 +331,11 @@ class BotMarathon:
             text = 'Выберите категорию:'
             for category in categories:
                 markup.add(InlineKeyboardButton(text=f'{category.category}', callback_data=f'Category_{category.id}'))
-            else:
-                text = 'К сожалению, на данный момент еще нет ни одного задания!'
+            if len(markup.keyboard) == 0:
+                text = 'К сожалению, на данный момент еще нет ни одной категории!'
             markup = get_buttons('', markup)
             markup.add(self.back_button).add(self.main_menu)
-            self.bot.edit_message_text(
-                text=text, chat_id=chat_id, message_id=message_id,
-                reply_markup=markup
-            )
+            get_msg_from_comparison(chat_id, message_id, markup, text)
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'Category_' in call.data)
@@ -348,10 +346,7 @@ class BotMarathon:
             complete_task = User.objects.filter(tg_id=call.message.chat.id).values_list('completed_tasks')
             edit_menu_user(call)
             markup = choice_tasks_algorithm(all_task, markup, complete_task)
-            self.bot.edit_message_text(
-                text='Выберите задание:', chat_id=call.message.chat.id, message_id=call.message.id,
-                reply_markup=markup
-            )
+            get_msg_from_comparison(call.message.chat.id, call.message.id, markup, 'Выберите задание:')
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'Task_' in call.data)
@@ -369,10 +364,7 @@ class BotMarathon:
                 self.bot.send_photo(call.message.chat.id, photo=open(f'{task.image.file.name}', 'rb'), caption=text,
                                     reply_markup=markup)
                 return
-            self.bot.edit_message_text(
-                text=text, chat_id=call.message.chat.id, message_id=call.message.id,
-                reply_markup=markup
-            )
+            get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
 
         @log_error
         def measurement(call, message_id, chat_id):
@@ -381,13 +373,12 @@ class BotMarathon:
             marathon = Marathon.objects.get_marathon()
             if not marathon:
                 markup.add(self.back_button).add(self.main_menu)
-                self.bot.edit_message_text(text='Марафон еще не начался!',
-                                           chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                get_msg_from_comparison(chat_id, message_id, markup, 'Марафон еще не начался!')
                 return
             if not marathon.close:
                 froze = Measurement.objects.get_or_none(tg_id=chat_id)
                 if froze:
-                    text = f'ДО:                     ----->                     ПОСЛЕ:\n' \
+                    text = f'<pre>ДО:                ----->                ПОСЛЕ:\n' \
                            f'Грудь: {froze.breast_before if froze.breast_before else ""}       ----->       ' \
                            f'Грудь: {froze.breast_after if froze.breast_after else ""},\n' \
                            f'Талия: {froze.waist_before if froze.waist_before else ""}        ----->        ' \
@@ -395,27 +386,22 @@ class BotMarathon:
                            f'Бедра: {froze.femur_before if froze.femur_before else ""}        ----->        ' \
                            f'Бедра: {froze.femur_after if froze.femur_after else ""},\n' \
                            f'Вес: {froze.weight_before if froze.weight_before else ""}       ----->       ' \
-                           f'Вес: {froze.weight_after if froze.weight_after else ""}'
+                           f'Вес: {froze.weight_after if froze.weight_after else ""}</pre>'
                     markup = get_buttons('add', markup)
                     if len(markup.keyboard) == 0:
                         markup.add(self.back_button).add(self.main_menu)
-                        self.bot.edit_message_text(text='Нужно немного подождать!\nЗагрузка еще не началась.',
-                                                   chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                        get_msg_from_comparison(chat_id, message_id, markup,
+                                                'Нужно немного подождать!\nЗагрузка еще не началась.')
                     else:
                         markup.add(self.back_button).add(self.main_menu)
-                        self.bot.edit_message_text(text=text,
-                                                   chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                        get_msg_from_comparison(chat_id, message_id, markup, text)
                 else:
                     markup = get_buttons(buttons='add', markup=markup)
                     markup.add(self.back_button).add(self.main_menu)
-                    self.bot.edit_message_text(text='Выберите, какие данные нужно ввести:',
-                                               chat_id=chat_id,
-                                               message_id=message_id,
-                                               reply_markup=markup)
+                    get_msg_from_comparison(chat_id, message_id, markup, 'Выберите, какие данные нужно ввести:')
             else:
                 markup.add(self.back_button).add(self.main_menu)
-                self.bot.edit_message_text(text='Извините, марафон пока что закрыт!',
-                                           chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                get_msg_from_comparison(chat_id, message_id, markup, 'Извините, марафон пока что закрыт!')
 
         @log_error
         def photos(call, message_id, chat_id, menu=None):
@@ -428,8 +414,7 @@ class BotMarathon:
                     return User.objects.get(tg_id=chat_id), markup, 'Извините, марафон пока что закрыт!'
                 else:
                     markup.add(self.back_button).add(self.main_menu)
-                    self.bot.edit_message_text(text='Марафон еще не начался!',
-                                               chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                    get_msg_from_comparison(chat_id, message_id, markup, 'Марафон еще не начался!')
                     return
             if not marathon.close:
                 photo = Photo.objects.get_or_none(tg_id=chat_id)
@@ -441,26 +426,23 @@ class BotMarathon:
                                'Какую фотографию вы хотите увидеть?\n' \
                                'Чтобы добавить фото, просто пришлите его мне!\n' \
                                'Убедитесь, что отправляете сжатое изображение!'
-                    self.bot.edit_message_text('Какую фотографию вы хотите увидеть?\n'
-                                               'Чтобы добавить фото, просто пришлите его мне!\n'
-                                               'Убедитесь, что отправляете сжатое изображение!',
-                                               chat_id, message_id,
-                                               reply_markup=markup)
+                    get_msg_from_comparison(chat_id, message_id, markup,
+                                            'Какую фотографию вы хотите увидеть?\nЧтобы добавить фото, просто '
+                                            'пришлите его мне!\nУбедитесь, что отправляете сжатое изображение!')
                 else:
                     markup.add(self.back_button)
                     markup.add(self.main_menu)
                     if menu:
                         return User.objects.get(tg_id=chat_id), markup, \
                                'Пришлите мне фотографию и следуйте дальнейшим инструкциям!'
-                    self.bot.edit_message_text(text='Пришлите мне фотографию и следуйте дальнейшим инструкциям!',
-                                               chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                    get_msg_from_comparison(chat_id, message_id, markup,
+                                            'Пришлите мне фотографию и следуйте дальнейшим инструкциям!')
             else:
                 markup.add(self.back_button)
                 markup.add(self.main_menu)
                 if menu:
                     return User.objects.get(tg_id=chat_id), markup, 'Извините, марафон пока что закрыт!'
-                self.bot.edit_message_text(text='Извините, марафон пока что закрыт!',
-                                           chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                get_msg_from_comparison(chat_id, message_id, markup, 'Извините, марафон пока что закрыт!')
 
         @log_error
         def invite(message_id, chat_id):
@@ -474,22 +456,17 @@ class BotMarathon:
                 rand_string = ''.join(random.choice(string.ascii_letters) for _ in range(8))
                 user.invitation_code = rand_string
                 user.save()
-            self.bot.edit_message_text(text=text.format(user.invitation_code), chat_id=chat_id,
-                                       message_id=message_id, reply_markup=markup)
+            get_msg_from_comparison(chat_id, message_id, markup, text.format(user.invitation_code))
 
         @log_error
         def enter_code(message_id, chat_id):
             user = User.objects.get(tg_id=chat_id)
+            markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             if user.is_enter_invite_code:
-                self.bot.edit_message_text(chat_id=chat_id,
-                                           text=f'Вы уже ввели пригласительный код!',
-                                           message_id=message_id,
-                                           reply_markup=InlineKeyboardMarkup(row_width=1).add(self.main_menu)
-                                           )
+                get_msg_from_comparison(chat_id, message_id, markup, f'Вы уже ввели пригласительный код!')
             else:
-                markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
                 text = 'Пожалуйста, введите пригласительный код!'
-                msg = self.bot.edit_message_text(text=text, chat_id=chat_id, message_id=message_id, reply_markup=markup)
+                msg = get_msg_from_comparison(chat_id, message_id, markup, text)
                 self.bot.register_next_step_handler(msg, enter_invite_code, msg)
 
         @log_error
@@ -501,12 +478,9 @@ class BotMarathon:
                 if user == user_from_db:
                     if not message_bot.text == 'Ай-ай-ай. Нельзя так делать!\n' \
                                                'Нельзя вводить свой же код приглашения!!!':
-                        msg = self.bot.edit_message_text(
-                            text='Ай-ай-ай. Нельзя так делать!\nНельзя вводить свой же код приглашения!!!',
-                            chat_id=message_bot.chat.id,
-                            message_id=message_bot.id,
-                            reply_markup=markup
-                        )
+                        msg = get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
+                                                      'Ай-ай-ай. Нельзя так делать!\nНельзя вводить свой же код '
+                                                      'приглашения!!!')
                     else:
                         msg = copy(message_bot)
                     self.bot.delete_message(message_user.chat.id, message_user.id)
@@ -520,20 +494,13 @@ class BotMarathon:
                     user.is_enter_invite_code = True
                     user.save()
                     self.bot.delete_message(message_user.chat.id, message_user.id)
-                    self.bot.edit_message_text(chat_id=message_bot.chat.id,
-                                               text=f'Вас пригласил {user_from_db.name} {user_from_db.surname}',
-                                               message_id=message_bot.id,
-                                               reply_markup=markup
-                                               )
+                    get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
+                                            f'Вас пригласил {user_from_db.name} {user_from_db.surname}')
                     self.bot.clear_step_handler(message_bot)
             else:
                 if not message_bot.text == 'Вы ввели неверный код!\nПожалуйста, повторите попытку снова!':
-                    msg = self.bot.edit_message_text(
-                        text='Вы ввели неверный код!\nПожалуйста, повторите попытку снова!',
-                        chat_id=message_bot.chat.id,
-                        message_id=message_bot.id,
-                        reply_markup=markup
-                    )
+                    msg = get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
+                                                  'Вы ввели неверный код!\nПожалуйста, повторите попытку снова!')
                 else:
                     msg = copy(message_bot)
                 self.bot.delete_message(message_user.chat.id, message_user.id)
@@ -544,7 +511,7 @@ class BotMarathon:
         def task_code(message_id, chat_id):
             markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             text = 'Пожалуйста, введите код задания!'
-            msg = self.bot.edit_message_text(text=text, chat_id=chat_id, message_id=message_id, reply_markup=markup)
+            msg = get_msg_from_comparison(chat_id, message_id, markup, text)
             self.bot.register_next_step_handler(msg, enter_task_code, msg)
 
         @log_error
@@ -562,18 +529,13 @@ class BotMarathon:
                     user.save()
                     text = f'Спасибо за введенный код!\nЗа это задание вы получили {task.count_scopes} баллов!'
                 self.bot.delete_message(message_user.chat.id, message_user.id)
-                self.bot.edit_message_text(text=text, chat_id=message_bot.chat.id, message_id=message_bot.id,
-                                           reply_markup=markup)
+                get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup, text)
                 self.bot.clear_step_handler(message_bot)
             else:
                 self.bot.delete_message(message_user.chat.id, message_user.id)
                 if not message_bot.text == 'Вы ввели неверный код!\nПожалуйста, повторите попытку снова!':
-                    msg = self.bot.edit_message_text(
-                        text='Вы ввели неверный код!\nПожалуйста, повторите попытку снова!',
-                        chat_id=message_bot.chat.id,
-                        message_id=message_bot.id,
-                        reply_markup=markup
-                    )
+                    msg = get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
+                                                  'Вы ввели неверный код!\nПожалуйста, повторите попытку снова!')
                 else:
                     msg = copy(message_bot)
                 self.bot.clear_step_handler(msg)
@@ -678,6 +640,8 @@ class BotMarathon:
             :param state: состояние модератора
             :param chat_id: id чата, куда нужно отправлять сообщения
             """
+            if self.bot.get_chat_member(chat_id=chat_id, user_id=chat_id).user.is_bot:
+                return
             markup = InlineKeyboardMarkup(row_width=2)
             steps = SCENARIOS[state.scenario_name]['steps']
             step = steps[state.step_name]
@@ -698,16 +662,15 @@ class BotMarathon:
                 self.bot.send_message(chat_id=chat_id, text=text_to_send)
 
         @log_error
-        @self.bot.message_handler(content_types=['text'], func=lambda message: not message.from_user.is_bot)
+        @self.bot.message_handler(content_types=["text"], func=lambda message: not message.from_user.is_bot)
         def register_user(message, token_scenario=None):
-            # clear(message)
             state = None
             text = message.text
             chat_id = message.chat.id
             try:
                 state = UserState.objects.get(user_id=chat_id)
             except Exception as exc:
-                logging.error(exc)
+                pass
             if token_scenario is None and not state:
                 user = User.objects.get_or_none(tg_id=message.chat.id)
                 if user:
@@ -731,11 +694,7 @@ class BotMarathon:
             else:
                 for intent in INTENTS:
                     if any(token == token_scenario for token in intent['tokens']):
-                        if intent['answer']:
-                            self.bot.send_message(chat_id, intent['answer'])
-                        else:
-                            start_scenario(intent['scenario'], chat_id, message)
-                        break
+                        start_scenario(intent['scenario'], chat_id, message)
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "_sex" in call.data)
@@ -751,7 +710,7 @@ class BotMarathon:
             continue_scenario(call.message.text, state, call.message.chat.id, message=call.message)
 
         @log_error
-        @self.bot.message_handler(content_types=['photo'])
+        @self.bot.message_handler(content_types=['photo'], func=lambda message: not message.from_user.is_bot)
         def photos_add(message):
             file_url = self.bot.get_file_url(file_id=message.photo[-1].file_id)
             self.image = requests.get(file_url).content
@@ -767,8 +726,7 @@ class BotMarathon:
             marathon = Marathon.objects.get_marathon()
             text = 'Выберите, куда относится эта фотография:'
             if not marathon:
-                self.bot.edit_message_text(text='Марафон еще не начался!',
-                                           chat_id=message.chat.id, message_id=message.id, reply_markup=markup)
+                get_msg_from_comparison(message.chat.id, message.id, markup, 'Марафон еще не начался!')
                 return
             if not marathon.close:
                 markup = get_buttons(buttons='photo_add', markup=markup)
@@ -778,7 +736,7 @@ class BotMarathon:
                 text = 'Марафон временно закрыт! Приношу свои извинения!'
             markup.add(self.back_button)
             markup.add(self.main_menu)
-            self.bot.send_message(message.chat.id, text, reply_markup=markup)
+            get_msg_from_comparison(message.chat.id, message.id, markup, text)
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: '_add' in call.data)
@@ -794,7 +752,7 @@ class BotMarathon:
             markup.add(self.main_menu)
             text = 'Спасибо!\nВаша фотография сохранена!\nЕсли хотите внести еще, просто пришлите мне фотографию!'
             self.image = None
-            self.bot.edit_message_text(text, call.message.chat.id, call.message.id, reply_markup=markup)
+            get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: '_get' in call.data)
@@ -807,11 +765,16 @@ class BotMarathon:
             text = 'Вашей фотографии нет в базе. Пришлите мне фотографию и следуйте инструкциям!'
             image = getattr(photo, call.data.split('_get')[0])
             if not image:
-                self.bot.edit_message_text(
-                    text, call.message.chat.id, call.message.id, reply_markup=markup)
+                get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
                 return
             self.bot.delete_message(call.message.chat.id, call.message.id)
-            self.bot.send_photo(call.message.chat.id, open(f'{image.file.name}', 'rb'), reply_markup=markup)
+            try:
+                self.bot.send_photo(call.message.chat.id, open(f'{image.file.name}', 'rb'), reply_markup=markup)
+            except Exception as exc:
+                self.bot.send_message(call.message.chat.id,
+                                      "Простите меня, я не нашел вашу фотографию :(\n"
+                                      "Сообщите об этом администратору и мы решим эту проблему :)",
+                                      reply_markup=markup)
 
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'Add_' in call.data)
@@ -867,6 +830,10 @@ class BotMarathon:
                 markup = get_all_products(markup)
                 user.menu = 'products_menu'
             user.save()
+            try:
+                UserState.objects.get(user_id=call.message.chat.id).delete()
+            except Exception as exc:
+                pass
             return markup, text
 
         @log_error
@@ -967,11 +934,27 @@ class BotMarathon:
                     if marathon.send_measurements_after and callback == 'Add_after':
                         btn_text = getattr(self.buttons, callback.lower())
                         markup.add(InlineKeyboardButton(text=btn_text, callback_data=callback))
-            self.back_button = InlineKeyboardButton(text=f'{getattr(self.buttons, "back")}',
-                                                    callback_data='back')
-            self.main_menu = InlineKeyboardButton(text=f'{getattr(self.buttons, "main_menu")}',
-                                                  callback_data='main_menu')
+
             return markup
+
+        @log_error
+        def get_msg_from_comparison(chat_id, message_id, markup, text):
+            try:
+                msg = self.bot.edit_message_text(
+                    text=text,
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    reply_markup=markup,
+                    parse_mode='HTML'
+                )
+            except Exception as exc:
+                msg = self.bot.send_message(
+                    text=text,
+                    chat_id=chat_id,
+                    reply_markup=markup,
+                    parse_mode='HTML'
+                )
+            return msg
 
 
 if __name__ == "__main__":
