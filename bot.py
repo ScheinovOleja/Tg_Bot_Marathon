@@ -378,8 +378,8 @@ class BotMarathon:
             text = f'{task.name}\n\n' \
                    f'{task.description}\n\n' \
                    f'{task.url if task.url else ""}\n\n'
-            markup.add(self.back_button).add(self.main_menu)
             if task.image:
+                markup.add(self.back_button).add(self.main_menu)
                 self.bot.delete_message(call.message.chat.id, call.message.id)
                 try:
                     self.bot.send_photo(call.message.chat.id, photo=open(f'{task.image.file.name}', 'rb'), caption=text,
@@ -523,6 +523,7 @@ class BotMarathon:
                     user.scopes += count_scopes
                     user.is_enter_invite_code = True
                     user.save()
+                    self.bot.delete_message(message_user.chat.id, message_user.id)
                     get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
                                             f'Вас пригласил {user_from_db.name} {user_from_db.surname}')
                     self.bot.clear_step_handler(message_bot)

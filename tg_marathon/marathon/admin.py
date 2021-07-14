@@ -122,6 +122,16 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ['unique_code', 'name']
     readonly_fields = ["preview"]
 
+    def delete_queryset(self, request, queryset):
+        for product in queryset:
+            for user in User.objects.filter(purchased_goods=product):
+                user.completed_tasks.remove(product)
+                user.save()
+            file_path = f"{Path(__file__).resolve().parent.parent}/media/{product.image.name}"
+            command = f'rm -r {file_path}'
+            os.system(command)
+            product.delete()
+
     def preview(self, obj):
         return mark_safe(
             f'<a href="{obj.image.url}" target="_blank"><img src="{obj.image.url}" style="max-height: 200px;"></a>')
@@ -245,6 +255,8 @@ class TaskAdmin(admin.ModelAdmin):
             file_path = f"{Path(__file__).resolve().parent.parent}/media/{task.image.name}"
             command = f'rm -r {file_path}'
             os.system(command)
+        for task in queryset:
+            task.delete()
 
     def preview(self, obj):
         url = f'<a href="{obj.image.url}" target="_blank"><img src="{obj.image.url}" style="max-height: 200px;"></a>'
@@ -272,7 +284,7 @@ class ConfigAdmin(admin.ModelAdmin):
     def start(self, request):
         path = Path(__file__).resolve().parent.parent.parent
         text = f'source {path}/venv/bin/activate & python {path}/bot.py'
-        test = os.system(text)
+        os.system(text)
         return redirect('/admin/marathon/config/')
 
     start_bot.short_description = 'Запуск'
