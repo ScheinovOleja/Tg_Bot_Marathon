@@ -228,8 +228,11 @@ class BotMarathon:
                    f'Стоимость - {product.price} баллов.'
             self.bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
             if product.image:
-                self.bot.send_photo(call.message.chat.id, open(f'{product.image.file.name}', 'rb'),
-                                    caption=text, reply_markup=markup)
+                try:
+                    self.bot.send_photo(call.message.chat.id, open(f'{product.image.file.name}', 'rb'),
+                                        caption=text, reply_markup=markup)
+                except Exception as exc:
+                    self.bot.send_message(call.message.chat.id, text=text, reply_markup=markup)
             else:
                 self.bot.send_message(call.message.chat.id, text=text, reply_markup=markup)
 
@@ -354,16 +357,20 @@ class BotMarathon:
             task = Tasks.objects.get(id=call.data.split('_')[1])
             markup = InlineKeyboardMarkup(row_width=1)
             edit_menu_user(call)
-            markup.add(self.back_button)
-            markup.add(self.main_menu)
             text = f'{task.name}\n\n' \
                    f'{task.description}\n\n' \
                    f'{task.url if task.url else ""}\n\n'
+            markup.add(self.back_button).add(self.main_menu)
             if task.image:
                 self.bot.delete_message(call.message.chat.id, call.message.id)
-                self.bot.send_photo(call.message.chat.id, photo=open(f'{task.image.file.name}', 'rb'), caption=text,
-                                    reply_markup=markup)
-                return
+                try:
+                    self.bot.send_photo(call.message.chat.id, photo=open(f'{task.image.file.name}', 'rb'), caption=text,
+                                        reply_markup=markup)
+                    return
+                except Exception as exc:
+                    self.bot.send_message(call.message.chat.id, text=text, reply_markup=markup)
+                    return
+            markup.add(self.back_button).add(self.main_menu)
             get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
 
         @log_error
@@ -448,7 +455,7 @@ class BotMarathon:
         def invite(message_id, chat_id):
             markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             user = User.objects.get(tg_id=chat_id)
-            text = 'Сообщите вашему другу следующий код - {}\n' \
+            text = f'Сообщите вашему другу следующий код - {user.invitation_code}\n' \
                    'Он должен будет ввести его и вы оба получите дополнительные баллы)'
             if not user.invitation_code:
                 import random
@@ -456,7 +463,9 @@ class BotMarathon:
                 rand_string = ''.join(random.choice(string.ascii_letters) for _ in range(8))
                 user.invitation_code = rand_string
                 user.save()
-            get_msg_from_comparison(chat_id, message_id, markup, text.format(user.invitation_code))
+            self.bot.delete_message(chat_id, message_id)
+            self.bot.send_message(chat_id=chat_id, reply_markup=markup,
+                                        text=text)
 
         @log_error
         def enter_code(message_id, chat_id):
@@ -466,7 +475,9 @@ class BotMarathon:
                 get_msg_from_comparison(chat_id, message_id, markup, f'Вы уже ввели пригласительный код!')
             else:
                 text = 'Пожалуйста, введите пригласительный код!'
-                msg = get_msg_from_comparison(chat_id, message_id, markup, text)
+                self.bot.delete_message(chat_id, message_id)
+                msg = self.bot.send_message(chat_id=chat_id, reply_markup=markup,
+                                            text=text)
                 self.bot.register_next_step_handler(msg, enter_invite_code, msg)
 
         @log_error
@@ -493,7 +504,6 @@ class BotMarathon:
                     user.scopes += count_scopes
                     user.is_enter_invite_code = True
                     user.save()
-                    self.bot.delete_message(message_user.chat.id, message_user.id)
                     get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
                                             f'Вас пригласил {user_from_db.name} {user_from_db.surname}')
                     self.bot.clear_step_handler(message_bot)
@@ -511,7 +521,9 @@ class BotMarathon:
         def task_code(message_id, chat_id):
             markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             text = 'Пожалуйста, введите код задания!'
-            msg = get_msg_from_comparison(chat_id, message_id, markup, text)
+            self.bot.delete_message(chat_id, message_id)
+            msg = self.bot.send_message(chat_id=chat_id, reply_markup=markup,
+                                        text=text)
             self.bot.register_next_step_handler(msg, enter_task_code, msg)
 
         @log_error
