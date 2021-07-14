@@ -465,7 +465,7 @@ class BotMarathon:
                 user.save()
             self.bot.delete_message(chat_id, message_id)
             self.bot.send_message(chat_id=chat_id, reply_markup=markup,
-                                        text=text)
+                                  text=text)
 
         @log_error
         def enter_code(message_id, chat_id):
@@ -572,12 +572,18 @@ class BotMarathon:
                         return self.bot.send_message(chat_id=chat_id,
                                                      text=step['text'].format(**context),
                                                      reply_markup=local_markup, parse_mode="HTML")
-                    return self.bot.edit_message_text(chat_id=chat_id,
-                                                      message_id=context['message_id'],
-                                                      text=step['text'].format(**context),
-                                                      reply_markup=local_markup, parse_mode="HTML")
+                    if len(local_markup.keyboard) == 5:
+                        return self.bot.edit_message_text(chat_id=chat_id,
+                                                          message_id=message_id,
+                                                          text=step['text'].format(**context),
+                                                          reply_markup=local_markup, parse_mode="HTML")
+                    else:
+                        self.bot.delete_message(message_id=message_id - 1, chat_id=chat_id)
+                        return self.bot.edit_message_text(chat_id=chat_id,
+                                                          message_id=context['message_id'],
+                                                          text=step['text'].format(**context),
+                                                          reply_markup=local_markup, parse_mode="HTML")
             except Exception as exc:
-                self.bot.delete_message(message_id=message_id, chat_id=chat_id)
                 return self.bot.send_message(chat_id=chat_id,
                                              text=step['text'].format(**context),
                                              reply_markup=local_markup, parse_mode="HTML")
