@@ -493,6 +493,7 @@ class BotMarathon:
 
         @log_error
         def enter_invite_code(message_user, message_bot):
+            clear_steps(message_user)
             user_from_db = User.objects.get_or_none(invitation_code=str(message_user.text))
             markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             if user_from_db:
@@ -539,6 +540,7 @@ class BotMarathon:
 
         @log_error
         def enter_task_code(message_user, message_bot):
+            clear_steps(message_user)
             markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             complete_task = User.objects.filter(tg_id=message_user.chat.id).values_list('completed_tasks')
             task = Tasks.objects.get_or_none(unique_key=message_user.text)
@@ -977,6 +979,18 @@ class BotMarathon:
                     parse_mode='HTML'
                 )
             return msg
+
+        @log_error
+        def clear_steps(message_user):
+            if message_user.text == '/start':
+                self.bot.clear_step_handler_by_chat_id(message_user.chat.id)
+                start(message_user)
+            elif message_user.text == '/register':
+                self.bot.clear_step_handler_by_chat_id(message_user.chat.id)
+                register(message_user)
+            elif message_user.text == '/clear':
+                self.bot.clear_step_handler_by_chat_id(message_user.chat.id)
+                clear(message_user)
 
 
 if __name__ == "__main__":
