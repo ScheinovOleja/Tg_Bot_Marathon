@@ -271,19 +271,34 @@ class ConfigAdmin(admin.ModelAdmin):
 
     def start_bot(self, request):
         return mark_safe(
-            f'<a class="button" href="{reverse("admin:start")}">Запустить</a>')
+            f'<a class="button" href="{reverse("admin:start")}">Запустить</a>'
+            f'<a class="button" href="{reverse("admin:stop")}">Остановить</a>'
+            f'<a class="button" href="{reverse("admin:restart")}">Перезапустить</a>')
 
     # Добавляем к существующим ссылкам в админке, ссылки на кнопки для их обработки
     def get_urls(self):
         urls = super().get_urls()
-        shard_urls = [path('#', self.admin_site.admin_view(self.start), name="start")]
+        shard_urls = [path('#', self.admin_site.admin_view(self.start), name="start"),
+                      path('#', self.admin_site.admin_view(self.stop), name="stop"),
+                      path('#', self.admin_site.admin_view(self.restart), name="restart")
+        ]
+
         # Список отображаемых столбцов
         return shard_urls + urls
 
     # Обработка событий кнопок
     def start(self, request):
-        path = Path(__file__).resolve().parent.parent.parent
-        text = f'source {path}/venv/bin/activate & python {path}/bot.py'
+        text = 'systemctl start bot'
+        os.system(text)
+        return redirect('/admin/marathon/config/')
+
+    def stop(self, request):
+        text = 'systemctl stop bot'
+        os.system(text)
+        return redirect('/admin/marathon/config/')
+
+    def restart(self, request):
+        text = 'systemctl restart bot'
         os.system(text)
         return redirect('/admin/marathon/config/')
 
