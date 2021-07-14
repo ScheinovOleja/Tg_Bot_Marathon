@@ -69,7 +69,6 @@ class BotMarathon:
         @log_error
         @self.bot.message_handler(commands=['register'], func=lambda message: not message.from_user.is_bot)
         def register(message):
-            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -82,7 +81,6 @@ class BotMarathon:
             """
             Очистка истории сообщений
             """
-            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -100,7 +98,6 @@ class BotMarathon:
         @self.bot.message_handler(commands=['start'], func=lambda message: not message.from_user.is_bot)
         @log_error
         def start(message):
-            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -117,6 +114,7 @@ class BotMarathon:
 
         @log_error
         def edit_menu_user(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             user = User.objects.get(tg_id=call.message.chat.id)
             if 'Tasks_start' == call.data:
                 user.menu = 'category_task_menu'
@@ -149,6 +147,7 @@ class BotMarathon:
                 UserState.objects.get(user_id=call.message.chat.id).delete()
             except Exception as exc:
                 pass
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             markup = InlineKeyboardMarkup(row_width=2)
             markup, text = choice_menu(markup, call)
             if call.message.content_type == 'text':
@@ -169,6 +168,7 @@ class BotMarathon:
                 UserState.objects.get(user_id=call.message.chat.id).delete()
             except Exception as exc:
                 pass
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             markup = InlineKeyboardMarkup(row_width=2)
             markup = get_buttons('start', markup)
             user = User.objects.get(tg_id=call.message.chat.id)
@@ -191,6 +191,7 @@ class BotMarathon:
                 UserState.objects.get(user_id=call.message.chat.id).delete()
             except Exception as exc:
                 pass
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             message_id = call.message.id
             chat_id = call.message.chat.id
             if "Tasks" in call.data:
@@ -229,6 +230,7 @@ class BotMarathon:
             except Exception as exc:
                 pass
             edit_menu_user(call)
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             product = Product.objects.get(unique_code=call.data.split('_')[1])
             markup = InlineKeyboardMarkup(row_width=2)
             markup.add(InlineKeyboardButton(text='Купить', callback_data=f'{product.unique_code}_buy'))
@@ -250,6 +252,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "_buy" in call.data)
         def get_product_code(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             code = call.data.split("_buy")[0]
             product = Product.objects.get(unique_code=code)
             user = User.objects.get(tg_id=call.message.chat.id)
@@ -293,6 +296,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "Level_activity_" in call.data)
         def calculate_activity(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             state, step, next_step = get_object_scenario(call.message)
             level_activity = {
                 'none': 1.2,
@@ -328,6 +332,7 @@ class BotMarathon:
         @self.bot.callback_query_handler(func=lambda call: "Stats_all" in call.data)
         def stats(call):
             edit_menu_user(call)
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             users = User.objects.order_by('-scopes')[:10]
             markup = InlineKeyboardMarkup().add(self.back_button).add(self.main_menu)
             text = f'ТОП-10 участников марафона:\n{"-" * 50}\n'
@@ -354,6 +359,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'Category_' in call.data)
         def choice_task(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             category = CategoryTasks.objects.get(id=call.data.split('_')[1])
             markup = InlineKeyboardMarkup(row_width=1)
             all_task = Tasks.objects.filter(category=category)
@@ -365,6 +371,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'Task_' in call.data)
         def info_task(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             task = Tasks.objects.get(id=call.data.split('_')[1])
             markup = InlineKeyboardMarkup(row_width=1)
             edit_menu_user(call)
@@ -666,6 +673,7 @@ class BotMarathon:
             :param state: состояние модератора
             :param chat_id: id чата, куда нужно отправлять сообщения
             """
+            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             if self.bot.get_chat_member(chat_id=chat_id, user_id=chat_id).user.is_bot:
                 return
             markup = InlineKeyboardMarkup(row_width=2)
@@ -692,6 +700,7 @@ class BotMarathon:
         @log_error
         @self.bot.message_handler(content_types=["text"], func=lambda message: not message.from_user.is_bot)
         def register_user(message, token_scenario=None):
+            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             state = None
             text = message.text
             chat_id = message.chat.id
@@ -727,6 +736,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "_sex" in call.data)
         def set_sex(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             state, step, next_step = get_object_scenario(call.message)
             sex = call.data.split('_')[0]
             if sex[0] == 'm':
@@ -740,6 +750,7 @@ class BotMarathon:
         @log_error
         @self.bot.message_handler(content_types=['photo'], func=lambda message: not message.from_user.is_bot)
         def photos_add(message):
+            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             file_url = self.bot.get_file_url(file_id=message.photo[-1].file_id)
             self.image = requests.get(file_url).content
             if not os.path.isdir(f"{os.getcwd()}/tg_marathon/media/user_photos"):
@@ -769,6 +780,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: '_add' in call.data)
         def choice_category_photo(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             photo = Photo.objects.get_or_create(tg_id=call.message.chat.id)[0]
             user = User.objects.get(tg_id=call.message.chat.id)
             setattr(photo, call.data.split('_add')[0], self.image)
@@ -785,6 +797,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: '_get' in call.data)
         def get_photo_from_db(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             edit_menu_user(call)
             photo = Photo.objects.get_or_none(tg_id=call.message.chat.id)
             markup = InlineKeyboardMarkup(row_width=2)
@@ -807,6 +820,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'Add_' in call.data)
         def add_measurement(call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             if 'before' in call.data:
                 register_user(call.message, 'measurement_before')
             elif 'after' in call.data:
@@ -816,6 +830,7 @@ class BotMarathon:
 
         @log_error
         def choice_menu(markup, call):
+            self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             user = User.objects.get(tg_id=call.message.chat.id)
             text = f'Привет, {user.name}!\nВыбери пункт меню:'
             if user.menu == 'main_menu':
