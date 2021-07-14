@@ -84,7 +84,13 @@ def name_handler(text: str, context, markup):
 
 
 def sex_handler(text: str, context, markup):
-    return True, markup
+    try:
+        if context['sex']:
+            return True, markup
+    except Exception as exc:
+        markup.add(InlineKeyboardButton(text='Мужчина', callback_data='man_sex'))
+        markup.add(InlineKeyboardButton(text='Женщина', callback_data='woman_sex'))
+        return False, markup
 
 
 def birthday_handler(text: str, context, markup):
