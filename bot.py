@@ -69,6 +69,7 @@ class BotMarathon:
         @log_error
         @self.bot.message_handler(commands=['register'], func=lambda message: not message.from_user.is_bot)
         def register(message):
+            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -81,6 +82,7 @@ class BotMarathon:
             """
             Очистка истории сообщений
             """
+            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -98,6 +100,7 @@ class BotMarathon:
         @self.bot.message_handler(commands=['start'], func=lambda message: not message.from_user.is_bot)
         @log_error
         def start(message):
+            self.bot.clear_step_handler_by_chat_id(message.chat.id)
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -184,6 +187,10 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "_start" in call.data)
         def marathon_buttons(call):
+            try:
+                UserState.objects.get(user_id=call.message.chat.id).delete()
+            except Exception as exc:
+                pass
             message_id = call.message.id
             chat_id = call.message.chat.id
             if "Tasks" in call.data:
@@ -217,6 +224,10 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "Product_" in call.data)
         def buy_product(call):
+            try:
+                UserState.objects.get(user_id=call.message.chat.id).delete()
+            except Exception as exc:
+                pass
             edit_menu_user(call)
             product = Product.objects.get(unique_code=call.data.split('_')[1])
             markup = InlineKeyboardMarkup(row_width=2)
@@ -845,10 +856,6 @@ class BotMarathon:
                 markup = get_all_products(markup)
                 user.menu = 'products_menu'
             user.save()
-            try:
-                UserState.objects.get(user_id=call.message.chat.id).delete()
-            except Exception as exc:
-                pass
             return markup, text
 
         @log_error
