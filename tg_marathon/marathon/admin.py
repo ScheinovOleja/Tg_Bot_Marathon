@@ -218,7 +218,10 @@ class MarathonAdmin(admin.ModelAdmin):
                 Measurement.objects.get(tg_id=user.tg_id).delete()
             except Exception as exc:
                 logging.error(exc)
-            user.delete()
+            user.measurement = None
+            user.photos = None
+            user.scopes = 0
+            user.save()
             file_path = f"{Path(__file__).resolve().parent.parent}/media/user_photos"
             command = f'rm -r {file_path}/{user.tg_id}'
             os.system(command)
