@@ -208,6 +208,23 @@ class MarathonAdmin(admin.ModelAdmin):
               'close']
     list_display = ['name', 'date_start', 'date_end', 'send_measurements_before', 'send_measurements_after', 'close']
 
+    def delete_queryset(self, request, queryset):
+        for user in User.objects.all():
+            try:
+                Photo.objects.get(tg_id=user.tg_id).delete()
+            except Exception as exc:
+                logging.error(exc)
+            try:
+                Measurement.objects.get(tg_id=user.tg_id).delete()
+            except Exception as exc:
+                logging.error(exc)
+            user.delete()
+            file_path = f"{Path(__file__).resolve().parent.parent}/media/user_photos"
+            command = f'rm -r {file_path}/{user.tg_id}'
+            os.system(command)
+        for marathon in queryset:
+            marathon.delete()
+
 
 @admin.register(Tasks)
 class TaskAdmin(admin.ModelAdmin):
