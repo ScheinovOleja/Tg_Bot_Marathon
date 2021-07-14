@@ -673,7 +673,8 @@ class BotMarathon:
             else:
                 text_to_send = step['failure_text'].format(**state.context)
                 self.bot.delete_message(chat_id=chat_id, message_id=message.id)
-                self.bot.edit_message_text(chat_id=chat_id, text=text_to_send, message_id=state.context['message_id'])
+                self.bot.edit_message_text(chat_id=chat_id, text=text_to_send, message_id=state.context['message_id'],
+                                           reply_markup=markup)
 
         @log_error
         @self.bot.message_handler(content_types=["text"], func=lambda message: not message.from_user.is_bot)

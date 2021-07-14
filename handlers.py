@@ -84,7 +84,13 @@ def name_handler(text: str, context, markup):
 
 
 def sex_handler(text: str, context, markup):
-    return True, markup
+    try:
+        if context['sex']:
+            return True, markup
+    except Exception as exc:
+        markup.add(InlineKeyboardButton(text='Мужчина', callback_data='man_sex'))
+        markup.add(InlineKeyboardButton(text='Женщина', callback_data='woman_sex'))
+        return False, markup
 
 
 def birthday_handler(text: str, context, markup):
@@ -214,3 +220,19 @@ def calculate_height_handler(text: str, context, markup):
     except Exception as exc:
         logging.error(exc)
         return False, None
+
+
+def calculate_activity(text: str, context, markup):
+    buttons = [
+        InlineKeyboardButton(text='Не занимаюсь спортом', callback_data='Level_activity_none'),
+        InlineKeyboardButton(text='Легкие тренировки(1-2)', callback_data='Level_activity_one-two'),
+        InlineKeyboardButton(text='Умеренная активность(3-5)', callback_data='Level_activity_three-five'),
+        InlineKeyboardButton(text='Повышенная активность(6-7)', callback_data='Level_activity_six-seven'),
+        InlineKeyboardButton(text='Профессиональный спорт(каждый день)', callback_data='Level_activity_professional'),
+    ]
+    for btn in buttons:
+        markup.add(btn)
+    if text:
+        return False, markup
+    else:
+        return True, markup
