@@ -205,6 +205,20 @@ class User(Model):
     photos = ForeignKey(Photo, on_delete=CASCADE, null=True, blank=True, verbose_name='Фотографии пользователя:')
     menu = CharField(default='main_menu', max_length=100, blank=True)
 
+    def delete(self, using=None, keep_parents=False):
+        try:
+            Photo.objects.get(tg_id=self.tg_id).delete()
+        except Exception as exc:
+            logging.error(exc)
+        try:
+            Measurement.objects.get(tg_id=self.tg_id).delete()
+        except Exception as exc:
+            logging.error(exc)
+        file_path = f"{Path(__file__).resolve().parent.parent}/media/user_photos"
+        command = f'rm -r {file_path}/{self.tg_id}'
+        os.system(command)
+        return super(User, self).delete()
+
     def __str__(self):
         return f'{self.name} {self.surname} - {self.tg_id}'
 

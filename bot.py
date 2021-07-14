@@ -610,6 +610,7 @@ class BotMarathon:
                         'surname': state.context['surname'],
                         'birthday': state.context['birthday'],
                         'sex': state.context['sex'],
+                        'invitation_code': ''.join(random.choice(string.ascii_letters) for _ in range(8))
                     },
                     tg_id=state.user_id,
                 )
