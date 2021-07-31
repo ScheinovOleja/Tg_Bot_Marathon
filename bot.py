@@ -9,6 +9,7 @@ from config import *
 import django
 import telebot as tb
 from telebot.types import *
+from django.db.models.functions import Lower
 
 sys.path.append(f'{os.getcwd()}/tg_marathon/')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tg_marathon.tg_marathon.settings')
@@ -200,10 +201,6 @@ class BotMarathon:
                 measurement(call, message_id, chat_id)
             elif "Photos" in call.data:
                 photos(call, message_id, chat_id)
-            elif "Invite" in call.data:
-                invite(message_id, chat_id)
-            elif "Enter" in call.data:
-                enter_code(message_id, chat_id)
             elif "Info" in call.data:
                 info_user(call, message_id, chat_id)
             elif 'Calculate' in call.data:
@@ -470,74 +467,6 @@ class BotMarathon:
                 get_msg_from_comparison(chat_id, message_id, markup, 'Извините, марафон пока что закрыт!')
 
         @log_error
-        def invite(message_id, chat_id):
-            markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
-            user = User.objects.get(tg_id=chat_id)
-            text = f'Сообщите вашему другу следующий код - {user.invitation_code}\n' \
-                   'Он должен будет ввести его и вы оба получите дополнительные баллы)'
-            if not user.invitation_code:
-                import random
-                import string
-                rand_string = ''.join(random.choice(string.ascii_letters) for _ in range(8))
-                user.invitation_code = rand_string
-                user.save()
-            self.bot.delete_message(chat_id, message_id)
-            self.bot.send_message(chat_id=chat_id, reply_markup=markup,
-                                  text=text)
-
-        @log_error
-        def enter_code(message_id, chat_id):
-            user = User.objects.get(tg_id=chat_id)
-            markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
-            if user.is_enter_invite_code:
-                get_msg_from_comparison(chat_id, message_id, markup, f'Вы уже ввели пригласительный код!')
-            else:
-                text = 'Пожалуйста, введите пригласительный код!'
-                self.bot.delete_message(chat_id, message_id)
-                msg = self.bot.send_message(chat_id=chat_id, reply_markup=markup,
-                                            text=text)
-                self.bot.register_next_step_handler(msg, enter_invite_code, msg)
-
-        @log_error
-        def enter_invite_code(message_user, message_bot):
-            clear_steps(message_user)
-            user_from_db = User.objects.get_or_none(invitation_code=str(message_user.text))
-            markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
-            if user_from_db:
-                user = User.objects.get(tg_id=message_user.chat.id)
-                if user == user_from_db:
-                    if not message_bot.text == 'Ай-ай-ай. Нельзя так делать!\n' \
-                                               'Нельзя вводить свой же код приглашения!!!':
-                        msg = get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
-                                                      'Ай-ай-ай. Нельзя так делать!\nНельзя вводить свой же код '
-                                                      'приглашения!!!')
-                    else:
-                        msg = copy(message_bot)
-                    self.bot.delete_message(message_user.chat.id, message_user.id)
-                    self.bot.clear_step_handler(msg)
-                    self.bot.register_next_step_handler(msg, enter_invite_code, msg)
-                elif not user.is_enter_invite_code:
-                    count_scopes = getattr(Config.objects.all().first(), 'count_scopes_invite')
-                    user_from_db.scopes += count_scopes
-                    user_from_db.save()
-                    user.scopes += count_scopes
-                    user.is_enter_invite_code = True
-                    user.save()
-                    self.bot.delete_message(message_user.chat.id, message_user.id)
-                    get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
-                                            f'Вас пригласил {user_from_db.name} {user_from_db.surname}')
-                    self.bot.clear_step_handler(message_bot)
-            else:
-                if not message_bot.text == 'Вы ввели неверный код!\nПожалуйста, повторите попытку снова!':
-                    msg = get_msg_from_comparison(message_bot.chat.id, message_bot.id, markup,
-                                                  'Вы ввели неверный код!\nПожалуйста, повторите попытку снова!')
-                else:
-                    msg = copy(message_bot)
-                self.bot.delete_message(message_user.chat.id, message_user.id)
-                self.bot.clear_step_handler(msg)
-                self.bot.register_next_step_handler(msg, enter_invite_code, msg)
-
-        @log_error
         def task_code(message_id, chat_id):
             markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             text = 'Пожалуйста, введите код задания!'
@@ -551,7 +480,7 @@ class BotMarathon:
             clear_steps(message_user)
             markup = InlineKeyboardMarkup(row_width=1).add(self.main_menu)
             complete_task = User.objects.filter(tg_id=message_user.chat.id).values_list('completed_tasks')
-            task = Tasks.objects.get_or_none(unique_key=message_user.text)
+            task = Tasks.objects.get_or_none(unique_key=message_user.text.lower())
             if task:
                 if any([task.id in complete for complete in complete_task]):
                     text = 'Вы уже выполнили это задание!'
@@ -926,8 +855,7 @@ class BotMarathon:
         def get_buttons(buttons='start', markup=None, chat_id=None):
             self.buttons = Buttons.objects.all().first()
             if buttons == 'start':
-                texts = ['Tasks_start', 'Info_start', 'Calculate_kcal_start', 'Invite_friend_start', 'Enter_code_start',
-                         'Code_task_start', 'Buy_product_start']
+                texts = ['Tasks_start', 'Info_start', 'Calculate_kcal_start', 'Code_task_start', 'Buy_product_start']
                 for text in texts:
                     caption = getattr(self.buttons, text.lower())
                     markup.add(InlineKeyboardButton(text=caption, callback_data=text))

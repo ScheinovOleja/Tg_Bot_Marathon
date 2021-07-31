@@ -100,9 +100,8 @@ class Tasks(Model):
     unique_key = CharField(max_length=12, default='', unique=True, blank=True, verbose_name='Уникальный код задания:')
 
     def save(self, *args, **kwargs):
-        if not self.unique_key:
-            self.unique_key = ''.join(random.choice(string.ascii_letters) for _ in range(12))
-        super(Tasks, self).save(*args, **kwargs)
+        self.unique_key = self.unique_key.lower() if self.unique_key else None
+        return super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
         for user in User.objects.filter(completed_tasks=self):
