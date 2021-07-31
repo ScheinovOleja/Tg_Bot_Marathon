@@ -286,6 +286,12 @@ class Buttons(Model):
         return 'Подписи кнопок'
 
 
+class Interlayer(Model):
+    tg_id = IntegerField(default=0, unique=True, verbose_name='TG_ID пользователя:', db_index=True)
+    photo = BinaryField(unique=True)
+    path = CharField(default='', max_length=99999)
+
+
 class UserState(Model):
     objects = MyManager()
     user_id = IntegerField(unique=True, db_index=True)

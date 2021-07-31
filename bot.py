@@ -15,7 +15,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tg_marathon.tg_marathon.setting
 django.setup()
 
 from marathon.models import User, Photo, Measurement, Marathon, UserState, CategoryTasks, Tasks, Product, Buttons, \
-    Config
+    Config, Interlayer
 
 
 def log_error(f):
@@ -42,13 +42,14 @@ def log_error(f):
 class BotMarathon:
 
     def __init__(self):
+        if not os.path.isdir(f"{os.getcwd()}/tg_marathon/media/user_photos"):
+            os.mkdir(f"{os.getcwd()}/tg_marathon/media/user_photos")
         self.bot = tb.TeleBot(token=getattr(Config.objects.all().first(), 'token_bot'), num_threads=2)
         self.back_button = InlineKeyboardButton(text=f'{getattr(Buttons.objects.all().first(), "back")}',
                                                 callback_data='back')
         self.main_menu = InlineKeyboardButton(text=f'{getattr(Buttons.objects.all().first(), "main_menu")}',
                                               callback_data='main_menu')
         self.def_bots()
-        self.image = None
 
     @log_error
     def run(self):
@@ -681,15 +682,14 @@ class BotMarathon:
         def photos_add(message):
             self.bot.clear_step_handler_by_chat_id(message.chat.id)
             file_url = self.bot.get_file_url(file_id=message.photo[-1].file_id)
-            self.image = requests.get(file_url).content
-            if not os.path.isdir(f"{os.getcwd()}/tg_marathon/media/user_photos"):
-                os.mkdir(f"{os.getcwd()}/tg_marathon/media/user_photos")
+            photo_db = Interlayer.objects.get_or_create(photo=requests.get(file_url).content, tg_id=message.chat.id)[0]
             if not os.path.isdir(f"{os.getcwd()}/tg_marathon/media/user_photos/{message.chat.id}"):
                 os.mkdir(f"{os.getcwd()}/tg_marathon/media/user_photos/{message.chat.id}")
             with open(f"{os.getcwd()}/tg_marathon/media/user_photos/{message.chat.id}/"
                       f"{message.photo[-1].file_unique_id}.jpg", 'wb') as new_file:
-                new_file.write(self.image)
-                self.image = new_file.name.split('media/')[1]
+                new_file.write(photo_db.photo)
+                photo_db.path = new_file.name.split('media/')[1]
+            photo_db.save()
             markup = InlineKeyboardMarkup(row_width=2)
             marathon = Marathon.objects.get_marathon()
             text = 'Выберите, куда относится эта фотография:'
@@ -712,7 +712,7 @@ class BotMarathon:
             self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             photo = Photo.objects.get_or_create(tg_id=call.message.chat.id)[0]
             user = User.objects.get(tg_id=call.message.chat.id)
-            setattr(photo, call.data.split('_add')[0], self.image)
+            setattr(photo, call.data.split('_add')[0], Interlayer.objects.get(tg_id=call.message.chat.id).path)
             user.photos_id = photo.id
             user.save()
             photo.save()
@@ -720,7 +720,7 @@ class BotMarathon:
             markup.add(self.back_button)
             markup.add(self.main_menu)
             text = 'Спасибо!\nВаша фотография сохранена!\nЕсли хотите внести еще, просто пришлите мне фотографию!'
-            self.image = None
+            Interlayer.objects.get(tg_id=call.message.chat.id).delete()
             get_msg_from_comparison(call.message.chat.id, call.message.id, markup, text)
 
         @log_error
@@ -936,6 +936,38 @@ class BotMarathon:
                 clear(message_user)
 
 
+def move_photos():
+    photos_text = ['photo_back_after', 'photo_back_before', 'photo_front_after', 'photo_front_before',
+                   'photo_sideways_after', 'photo_sideways_before']
+    all_users = Photo.objects.all()
+    for photos in all_users:
+        for text in photos_text:
+            photo_path = getattr(photos, text)
+            if str(photos.tg_id) in photo_path.name:
+                continue
+            else:
+                import shutil
+                try:
+                    test_1 = photo_path.path
+                    test_2 = photo_path.path.split('/')
+                    if test_2[-2].isdigit():
+                        test_2[-2] = photos.tg_id
+                    else:
+                        test_2.insert(-1, photos.tg_id)
+                    test_3 = ''
+                    for item in test_2:
+                        test_3 += f'{item}/'
+                    test_3 = test_3[:-1]
+                    setattr(photos, text, test_3[:-1])
+                    if not os.path.isdir(f"{os.getcwd()}/tg_marathon/media/user_photos/{photos.tg_id}"):
+                        os.mkdir(f"{os.getcwd()}/tg_marathon/media/user_photos/{photos.tg_id}")
+                    shutil.move(test_1, test_3[:-1])
+                    photos.save()
+                except Exception as exc:
+                    continue
+
+
 if __name__ == "__main__":
-    bot = BotMarathon()
-    bot.run()
+    # bot = BotMarathon()
+    # bot.run()
+    move_photos()
