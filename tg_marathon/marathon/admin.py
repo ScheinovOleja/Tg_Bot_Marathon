@@ -242,7 +242,7 @@ class MarathonAdmin(admin.ModelAdmin):
 @admin.register(Tasks)
 class TaskAdmin(admin.ModelAdmin):
     fields = ['name', 'category', 'description', 'count_scopes', 'url', 'image', 'preview', 'unique_key']
-    readonly_fields = ['preview', 'unique_key']
+    readonly_fields = ['preview']
     list_display = ['name', 'category', 'count_scopes', 'unique_key']
     list_filter = ['category']
     search_fields = ['name', 'unique_key']
