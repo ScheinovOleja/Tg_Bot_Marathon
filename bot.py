@@ -9,7 +9,6 @@ from config import *
 import django
 import telebot as tb
 from telebot.types import *
-from django.db.models.functions import Lower
 
 sys.path.append(f'{os.getcwd()}/tg_marathon/')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tg_marathon.tg_marathon.settings')
