@@ -70,6 +70,7 @@ class BotMarathon:
         @log_error
         @self.bot.message_handler(commands=['register'], func=lambda message: not message.from_user.is_bot)
         def register(message):
+            Interlayer.objects.get(tg_id=message.chat.id).delete()
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -99,6 +100,7 @@ class BotMarathon:
         @self.bot.message_handler(commands=['start'], func=lambda message: not message.from_user.is_bot)
         @log_error
         def start(message):
+            Interlayer.objects.get(tg_id=message.chat.id).delete()
             try:
                 UserState.objects.get(user_id=message.chat.id).delete()
             except Exception as exc:
@@ -115,6 +117,7 @@ class BotMarathon:
 
         @log_error
         def edit_menu_user(call):
+            Interlayer.objects.get(tg_id=call.message.chat.id).delete()
             self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             user = User.objects.get(tg_id=call.message.chat.id)
             if 'Tasks_start' == call.data:
@@ -144,6 +147,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "back" == call.data)
         def back(call):
+            Interlayer.objects.get(tg_id=call.message.chat.id).delete()
             try:
                 UserState.objects.get(user_id=call.message.chat.id).delete()
             except Exception as exc:
@@ -165,6 +169,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: 'main_menu' == call.data)
         def main_menu(call):
+            Interlayer.objects.get(tg_id=call.message.chat.id).delete()
             try:
                 UserState.objects.get(user_id=call.message.chat.id).delete()
             except Exception as exc:
@@ -188,6 +193,7 @@ class BotMarathon:
         @log_error
         @self.bot.callback_query_handler(func=lambda call: "_start" in call.data)
         def marathon_buttons(call):
+            Interlayer.objects.get(tg_id=call.message.chat.id).delete()
             try:
                 UserState.objects.get(user_id=call.message.chat.id).delete()
             except Exception as exc:
@@ -759,6 +765,7 @@ class BotMarathon:
 
         @log_error
         def choice_menu(markup, call):
+            Interlayer.objects.get(tg_id=call.message.chat.id).delete()
             self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
             user = User.objects.get(tg_id=call.message.chat.id)
             text = f'Привет, {user.name}!\nВыбери пункт меню:'
@@ -925,6 +932,7 @@ class BotMarathon:
 
         @log_error
         def clear_steps(message_user):
+            Interlayer.objects.get(tg_id=message_user.chat.id).delete()
             if message_user.text == '/start':
                 self.bot.clear_step_handler_by_chat_id(message_user.chat.id)
                 start(message_user)
