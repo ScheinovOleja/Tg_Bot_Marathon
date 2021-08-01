@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import requests
 from django.http import JsonResponse
@@ -18,6 +19,7 @@ class SendMessageToTG(View):
             url = f'https://api.telegram.org/bot{getattr(Config.objects.all().first(), "token_bot")}' \
                   f'/sendMessage?chat_id={user.tg_id}&text={text}'
             requests.get(url)
+            time.sleep(0.5)
         return render(request, 'index.html', {'context': {'sent': True}})
 
     def get(self, request):
