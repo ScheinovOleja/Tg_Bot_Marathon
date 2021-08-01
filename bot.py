@@ -968,6 +968,6 @@ def move_photos():
 
 
 if __name__ == "__main__":
-    # bot = BotMarathon()
-    # bot.run()
-    move_photos()
+    bot = BotMarathon()
+    bot.run()
+    # move_photos()
