@@ -287,7 +287,7 @@ class Buttons(Model):
 
 
 class Interlayer(Model):
-    tg_id = IntegerField(default=0, unique=True, verbose_name='TG_ID пользователя:', db_index=True)
+    tg_id = IntegerField(default=0, verbose_name='TG_ID пользователя:', db_index=True)
     photo = BinaryField(unique=True)
     path = CharField(default='', max_length=99999)
 
